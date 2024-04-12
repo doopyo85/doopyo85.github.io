@@ -35,6 +35,7 @@
     <div>Teachable Machine Image Model</div>
     <!-- Start 버튼을 클릭했을 때 init() 함수 호출 -->
     <button type="button" onclick="init()">Start</button>
+    <button type="button" onclick="predict()">구별</button>
     <div id="label-container"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
@@ -67,8 +68,44 @@
             const image = document.createElement('img');
             image.src = URL.createObjectURL(file);
             image.onload = async function() {
-                await predict(image);
+                await predict();
             };
+        }
+
+        // 예측을 실행하는 함수
+        async function predict() {
+            // 이미지 요소 가져오기
+            const image = document.getElementById('file-image');
+
+            // 모델이 로드되지 않은 경우 초기화
+            if (!model) {
+                console.error('Model not loaded yet');
+                return;
+            }
+
+            // 모델에 이미지 예측
+            const prediction = await model.predict(image, false);
+
+            // 결과를 화면에 출력
+            displayPredictions(prediction);
+        }
+
+        // 예측 결과를 표시하는 함수
+        function displayPredictions(prediction) {
+            // 예측 결과를 담을 컨테이너 가져오기
+            const labelContainer = document.getElementById('label-container');
+
+            // 이전에 추가된 예측 결과가 있으면 삭제
+            while (labelContainer.firstChild) {
+                labelContainer.removeChild(labelContainer.firstChild);
+            }
+
+            // 각 클래스에 대한 예측을 순회하며 화면에 표시
+            prediction.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.textContent = `Class ${index + 1}: ${item.className} - Probability: ${item.probability.toFixed(4)}`;
+                labelContainer.appendChild(div);
+            });
         }
 
         // Attach event listener to handle image upload
