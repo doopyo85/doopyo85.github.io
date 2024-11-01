@@ -1,49 +1,32 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Akmong Site</title>
-    <style>
-        body {
-            background-image: url('intro.png');
-            background-size: cover;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
-            margin: 0;
-            padding: 0;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        #link {
-            position: absolute;
-            bottom: 20px;
-            text-align: center;
-            width: 100%;
-        }
-        #link a {
-            color: white;
-            text-decoration: none;
-            font-size: 24px;
-            padding: 10px 20px;
-            background-color: rgba(0, 0, 0, 0.5);
-            border-radius: 10px;
-            transition: background-color 0.3s ease;
-        }
-        #link a:hover {
-            background-color: rgba(0, 0, 0, 0.7);
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Victoria</title>
+  <style>
+    canvas { border: 1px solid black; width: 100%; height: 100%; }
+    #gameUI { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+  </style>
+  <!-- Firebase 초기 설정 -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js"></script>
 </head>
 <body>
-<audio autoplay loop>
-    <source src="Scary_Halloween_Cinematic_Trailer_-_Alex_Che.mp3" type="audio/mpeg">
-    Your browser does not support the audio element.
-</audio>
-<div id="link">
-    <a href="http://zep.us/play/Dv39Ez" target="_blank">들어가기</a>
-</div>
+  <canvas id="gameCanvas"></canvas>
+  <script>
+    // Firebase 초기화
+    const firebaseConfig = {
+      apiKey: "AIzaSyAH8LI0wbqsxvpmtfBrNmk-xN76YmQIFCE",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      projectId: "project-victoria-df000",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+  </script>
+  <script src="game.js"></script>
 </body>
 </html>
