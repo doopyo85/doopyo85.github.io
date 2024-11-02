@@ -7,15 +7,33 @@
   <style>
     canvas { border: 1px solid black; width: 100%; height: 100%; }
     #gameUI { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+    
+    /* 로그인 버튼 스타일 */
+    #loginButtonContainer {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      z-index: 10;
+    }
+    
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
   <canvas id="gameCanvas"></canvas>
-  <button onclick="googleSignIn()">Sign in with Google</button> <!-- Google 로그인 버튼 -->
+  
+  <!-- Google 로그인 버튼을 감싸는 컨테이너 -->
+  <div id="loginButtonContainer">
+    <button onclick="googleSignIn()">Sign in with Google</button> <!-- Google 로그인 버튼 -->
+  </div>
 
   <script>
     // Cloudflare Worker URL
-   const WORKER_URL = 'https://victoria.doopyo85.workers.dev/auth'; // 실제 Worker URL로 변경
+    const WORKER_URL = 'https://victoria.doopyo85.workers.dev/auth'; // 실제 Worker URL로 변경
 
     // Google 로그인 함수
     async function googleSignIn() {
@@ -50,6 +68,7 @@
       }
     }
   </script>
+  
   <script src="game.js"></script> <!-- 게임 관련 스크립트 -->
 </body>
 </html>
