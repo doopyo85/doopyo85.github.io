@@ -1,10 +1,39 @@
-<canvas id="gameCanvas" width="800" height="600"></canvas>
-<script>
-    const canvas = document.getElementById("gameCanvas");
-    const ctx = canvas.getContext("2d");
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>게임 화면</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+            width: 100%;
+            height: 80%;
+        }
+        #tooltip {
+            display: none;
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="tooltip"></div>
 
-    let currentScreen = "start"; // 현재 화면 상태
-       // 캐릭터 정보 데이터
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const tooltip = document.getElementById("tooltip");
+
+        let currentScreen = "start";
+
+        // 캐릭터 정보 데이터
         const characterData = [
             { name: "나이트", concept: "칼을 휘두르며 공격", attack: 700, health: 6000, range: 200, speed: 15, cost: 2250, cooldown: "30s" },
             { name: "아처", concept: "활에서 화살이 나감", attack: 1700, health: 2000, range: 400, speed: 10, cost: 2500, cooldown: "35s" },
@@ -19,50 +48,28 @@
             { name: "사이언티스트", concept: "약품을 흔들며 초록 빛을 만듦", attack: 0, health: 800, range: 10, speed: 2, cost: 5000, cooldown: "0.5s" },
             { name: "복서", concept: "원투 3타로 스트레이트 주먹 공격", attack: "50, 50, 500", health: 3000, range: 250, speed: 13, cost: 8000, cooldown: "50s" }
         ];
-    const characterImages = {};
 
-    // 이미지 로드
-    function loadImages(callback) {
-        let loadedImages = 0;
-        characterNames.forEach(name => {
-            const img = new Image();
-            img.src = `https://doopyo85.github.io/img/${name}.webp`;
-            img.onload = () => {
-                characterImages[name] = img;
-                loadedImages++;
-                if (loadedImages === characterNames.length) callback();
-            };
-        });
-    }
-
-    function drawStartScreen() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // 캐릭터들 표시 (임시 텍스트로 대체)
-        ctx.font = "30px Arial";
-        ctx.fillText("캐릭터들 등장!", 250, 200);
-
-        // 게임 시작 버튼
-        ctx.fillStyle = "yellow";
-        ctx.fillRect(300, 350, 200, 50);
-        ctx.fillStyle = "black";
-        ctx.font = "20px Arial";
-        ctx.fillText("게임 시작", 340, 380);
-    }
-
-    function drawLobbyScreen() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // 대기실 상단 덱 슬롯
-        ctx.font = "20px Arial";
-        ctx.fillText("덱 슬롯:", 50, 50);
-        for (let i = 0; i < 5; i++) {
-            ctx.strokeRect(100 + i * 120, 30, 100, 100);
+        function drawStartScreen() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.font = "30px Arial";
+            ctx.fillText("캐릭터들 등장!", 250, 200);
+            ctx.fillStyle = "yellow";
+            ctx.fillRect(300, 350, 200, 50);
+            ctx.fillStyle = "black";
+            ctx.font = "20px Arial";
+            ctx.fillText("게임 시작", 340, 380);
         }
 
-        // 하단 캐릭터 카드 목록
-        ctx.fillText("전체 캐릭터 카드", 50, 180);
-           characterData.forEach((character, index) => {
+        function drawLobbyScreen() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.font = "20px Arial";
+            ctx.fillText("덱 슬롯:", 50, 50);
+            for (let i = 0; i < 5; i++) {
+                ctx.strokeRect(100 + i * 120, 30, 100, 100);
+            }
+
+            ctx.fillText("전체 캐릭터 카드", 50, 180);
+            characterData.forEach((character, index) => {
                 const x = 100 + (index % 6) * 120;
                 const y = 200 + Math.floor(index / 6) * 120;
                 ctx.fillStyle = "lightblue";
@@ -71,15 +78,9 @@
                 ctx.font = "16px Arial";
                 ctx.fillText(character.name, x + 10, y + 60);
             });
+        }
 
-        // 배틀 스타트 버튼
-        ctx.fillStyle = "red";
-        ctx.fillRect(650, 20, 120, 40);
-        ctx.fillStyle = "white";
-        ctx.fillText("배틀 스타트", 660, 45);
-    }
-
-         // 마우스 오버 이벤트 핸들러
+        // 마우스 오버 이벤트 핸들러
         canvas.addEventListener("mousemove", (e) => {
             const x = e.offsetX;
             const y = e.offsetY;
@@ -107,22 +108,19 @@
                 });
             }
         });
-    
-    // 이벤트 핸들러 추가
-    canvas.addEventListener("click", (e) => {
-        const x = e.offsetX;
-        const y = e.offsetY;
 
-        if (currentScreen === "start" && x > 300 && x < 500 && y > 350 && y < 400) {
-            currentScreen = "lobby";
-            drawLobbyScreen();
-        } else if (currentScreen === "lobby" && x > 650 && x < 770 && y > 20 && y < 60) {
-            alert("배틀 화면으로 전환됩니다.");
-            // 배틀 화면 전환 함수 호출 예정
-        }
-    });
+        canvas.addEventListener("click", (e) => {
+            const x = e.offsetX;
+            const y = e.offsetY;
+            if (currentScreen === "start" && x > 300 && x < 500 && y > 350 && y < 400) {
+                currentScreen = "lobby";
+                drawLobbyScreen();
+            } else if (currentScreen === "lobby" && x > 650 && x < 770 && y > 20 && y < 60) {
+                alert("배틀 화면으로 전환됩니다.");
+            }
+        });
 
-    // 이미지 로드 후 시작 화면 표시
-    loadImages(drawStartScreen);
-</script>
-
+        drawStartScreen();
+    </script>
+</body>
+</html>
