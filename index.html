@@ -5,38 +5,42 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Victoria - Google Login</title>
   <style>
-    canvas { 
-      border: 1px solid black; 
-      width: 100%; 
-      height: calc(100% - 50px); /* 버튼 위치를 확보하기 위해 캔버스 높이 조정 */
-    }
-    #gameUI { 
-      position: absolute; 
-      top: 0; 
-      left: 0; 
-      width: 100%; 
-      height: 100%; 
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      background: url('/img/intro.png') no-repeat center center;
+      background-size: cover;
+      overflow: hidden;
     }
     
-    #loginButtonContainer {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      z-index: 10;
+    #loginButtonContainer, #gameButtonContainer {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 10px;
     }
 
-    #gameButtonContainer {
-      position: absolute;
-      bottom: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 10;
-    }
-    
     button {
       padding: 10px 20px;
       font-size: 16px;
       cursor: pointer;
+      margin-top: 10px;
+      width: 150px;
+      border: none;
+      border-radius: 5px;
+      background-color: #4CAF50;
+      color: white;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #45a049;
     }
 
     .error-message {
@@ -51,15 +55,12 @@
   </style>
 </head>
 <body>
-  <canvas id="gameCanvas"></canvas>
-  
   <div id="loginButtonContainer">
     <button id="signInButton">Sign in with Google</button>
     <div id="userInfo" class="user-info"></div>
     <div id="errorMessage" class="error-message"></div>
   </div>
   
-  <!-- 게임 화면 이동 버튼 -->
   <div id="gameButtonContainer">
     <button id="startGameButton">게임 시작</button>
   </div>
@@ -148,7 +149,7 @@
 
     // 게임 시작 버튼 클릭 시 lobby.html로 이동
     document.getElementById('startGameButton').addEventListener('click', () => {
-    location.href = "lobby.html";
+      location.href = "lobby.html";
     });
   </script>
 </body>
