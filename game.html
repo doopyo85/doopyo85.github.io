@@ -4,11 +4,21 @@
     const ctx = canvas.getContext("2d");
 
     let currentScreen = "start"; // 현재 화면 상태
-    const characterNames = [
-        'archer', 'artist', 'biker', 'boxer',
-        'doctor', 'giant', 'knight', 'lifeguard',
-        'magician', 'scientist', 'shield', 'viking'
-    ];
+       // 캐릭터 정보 데이터
+        const characterData = [
+            { name: "나이트", concept: "칼을 휘두르며 공격", attack: 700, health: 6000, range: 200, speed: 15, cost: 2250, cooldown: "30s" },
+            { name: "아처", concept: "활에서 화살이 나감", attack: 1700, health: 2000, range: 400, speed: 10, cost: 2500, cooldown: "35s" },
+            { name: "마법사", concept: "지팡이를 앞세워 작은 파이어볼로 공격", attack: 1200, health: 2500, range: 425, speed: 12, cost: 3000, cooldown: "50s" },
+            { name: "아티스트", concept: "물감의 색을 정하고 그에 맞는 공격을 함", attack: 1000, health: 3000, range: 375, speed: 12, cost: 3000, cooldown: "50s" },
+            { name: "박사", concept: "책을 읽는다", attack: 0, health: 500, range: 0, speed: 0, cost: 4500, cooldown: "60s" },
+            { name: "방패병", concept: "방패를 들고 내려찍으며 공격", attack: 300, health: 10000, range: 150, speed: 12, cost: 3000, cooldown: "35s" },
+            { name: "바이킹", concept: "도끼로 공격", attack: 1200, health: 4000, range: 150, speed: 18, cost: 3250, cooldown: "40s" },
+            { name: "자이언트", concept: "양손을 든 다음 내려찍으며 공격", attack: 1200, health: 10000, range: "250 ~ -250", speed: 10, cost: 4000, cooldown: "55s" },
+            { name: "안전요원", concept: "메가폰을 소리 지르며 공격", attack: 200, health: 1000, range: "450 ~ 0", speed: 14, cost: 4000, cooldown: "4s" },
+            { name: "폭주족", concept: "오토바이로 적을 들이받음", attack: 700, health: 1000, range: "150 ~ 0", speed: 20, cost: 4000, cooldown: "8s" },
+            { name: "사이언티스트", concept: "약품을 흔들며 초록 빛을 만듦", attack: 0, health: 800, range: 10, speed: 2, cost: 5000, cooldown: "0.5s" },
+            { name: "복서", concept: "원투 3타로 스트레이트 주먹 공격", attack: "50, 50, 500", health: 3000, range: 250, speed: 13, cost: 8000, cooldown: "50s" }
+        ];
     const characterImages = {};
 
     // 이미지 로드
@@ -52,11 +62,15 @@
 
         // 하단 캐릭터 카드 목록
         ctx.fillText("전체 캐릭터 카드", 50, 180);
-        characterNames.forEach((name, index) => {
-            const x = 100 + (index % 6) * 120; // 각 카드의 X 좌표
-            const y = 200 + Math.floor(index / 6) * 120; // 각 카드의 Y 좌표
-            ctx.drawImage(characterImages[name], x, y, 100, 100); // 캐릭터 이미지 그리기
-        });
+           characterData.forEach((character, index) => {
+                const x = 100 + (index % 6) * 120;
+                const y = 200 + Math.floor(index / 6) * 120;
+                ctx.fillStyle = "lightblue";
+                ctx.fillRect(x, y, 100, 100);
+                ctx.fillStyle = "black";
+                ctx.font = "16px Arial";
+                ctx.fillText(character.name, x + 10, y + 60);
+            });
 
         // 배틀 스타트 버튼
         ctx.fillStyle = "red";
@@ -65,6 +79,35 @@
         ctx.fillText("배틀 스타트", 660, 45);
     }
 
+         // 마우스 오버 이벤트 핸들러
+        canvas.addEventListener("mousemove", (e) => {
+            const x = e.offsetX;
+            const y = e.offsetY;
+            tooltip.style.display = "none";
+
+            if (currentScreen === "lobby") {
+                characterData.forEach((character, index) => {
+                    const cardX = 100 + (index % 6) * 120;
+                    const cardY = 200 + Math.floor(index / 6) * 120;
+                    if (x > cardX && x < cardX + 100 && y > cardY && y < cardY + 100) {
+                        tooltip.style.display = "block";
+                        tooltip.style.left = `${e.pageX + 10}px`;
+                        tooltip.style.top = `${e.pageY + 10}px`;
+                        tooltip.innerHTML = `
+                            <strong>${character.name}</strong><br>
+                            컨셉: ${character.concept}<br>
+                            공격력: ${character.attack}<br>
+                            체력: ${character.health}<br>
+                            사거리: ${character.range}<br>
+                            속도: ${character.speed}<br>
+                            코스트: ${character.cost}<br>
+                            쿨타임: ${character.cooldown}
+                        `;
+                    }
+                });
+            }
+        });
+    
     // 이벤트 핸들러 추가
     canvas.addEventListener("click", (e) => {
         const x = e.offsetX;
