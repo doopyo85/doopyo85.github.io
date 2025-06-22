@@ -2,21 +2,32 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>이미지 예측기</title>
+  <title>AI 예측기</title>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest"></script>
 </head>
 <body>
+  <h2>AI 이미지 예측</h2>
+  <p id="status">대기 중...</p>
+  <p><b>모델:</b> <span id="modelURL">없음</span></p>
+  <p><b>이미지:</b> <span id="imageURL">없음</span></p>
+  <p><b>예측결과:</b> <span id="result">-</span></p>
   <canvas id="preview" width="224" height="224" style="display:none;"></canvas>
 
   <script>
-    const URL = "https://teachablemachine.withgoogle.com/models/hG6md1bwO/";
-    let model, maxPredictions;
+    let model = null;
+    let modelBaseURL = null;
+    const statusEl = document.getElementById("status");
+    const modelURLEl = document.getElementById("modelURL");
+    const imageURLEl = document.getElementById("imageURL");
+    const resultEl = document.getElementById("result");
 
-    async function loadModel() {
-      const modelURL = URL + "model.json";
-      const metadataURL = URL + "metadata.json";
+    async function loadModel(baseURL) {
+      statusEl.innerText = "모델 불러오는 중...";
+      const modelURL = baseURL + "model.json";
+      const metadataURL = baseURL + "metadata.json";
       model = await tmImage.load(modelURL, metadataURL);
+      statusEl.innerText = "모델 로드 완료!";
     }
 
     async function predictFromBase64(base64) {
@@ -31,7 +42,7 @@
         prediction.sort((a, b) => b.probability - a.probability);
         const top = prediction[0];
 
-        // 결과를 Thunkable로 전송
+        resultEl.innerText = top.className;
         if (window.ReactNativeWebView) {
           window.ReactNativeWebView.postMessage(top.className);
         } else if (window.postMessage) {
@@ -41,25 +52,31 @@
       img.src = base64;
     }
 
-    // Thunkable에서 메시지 수신
     window.addEventListener("message", async (event) => {
-      let fileUrl = event.data;
+      let data = event.data;
+      if (typeof data !== "string") return;
 
-      if (!fileUrl.startsWith("http") && !fileUrl.startsWith("data:image")) return;
-
-      if (!model) {
-        await loadModel();
+      const parts = data.split("|");
+      if (parts.length < 2) {
+        statusEl.innerText = "전달받은 데이터 형식이 잘못되었습니다.";
+        return;
       }
 
-      // http → https 보정
-      if (fileUrl.startsWith("http://")) {
-        fileUrl = fileUrl.replace("http://", "https://");
+      let imageURL = parts[0].replace("http://", "https://");
+      let newModelURL = parts[1];
+
+      imageURLEl.innerText = imageURL;
+      modelURLEl.innerText = newModelURL;
+
+      if (!model || modelBaseURL !== newModelURL) {
+        modelBaseURL = newModelURL;
+        await loadModel(modelBaseURL);
       }
 
+      statusEl.innerText = "이미지 예측 중...";
       try {
-        const response = await fetch(fileUrl);
+        const response = await fetch(imageURL);
         const blob = await response.blob();
-
         const reader = new FileReader();
         reader.onloadend = () => {
           const base64data = reader.result;
@@ -67,12 +84,7 @@
         };
         reader.readAsDataURL(blob);
       } catch (err) {
-        const errorMessage = "이미지 변환 실패: " + err.message;
-        if (window.ReactNativeWebView) {
-          window.ReactNativeWebView.postMessage(errorMessage);
-        } else if (window.postMessage) {
-          window.postMessage(errorMessage, "*");
-        }
+        statusEl.innerText = "이미지 처리 실패: " + err.message;
       }
     });
   </script>
