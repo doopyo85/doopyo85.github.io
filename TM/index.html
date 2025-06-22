@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AI 예측 결과</title>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image"></script>
+</head>
+<body>
+  <h2>이미지 인식 결과</h2>
+  <video id="webcam" autoplay playsinline width="300" height="300"></video>
+  <p id="result">예측 중...</p>
+
+  <script>
+    const modelURL = "https://teachablemachine.withgoogle.com/models/qa3x4ZfAB/";
+    let model, webcam;
+
+    async function init() {
+      const modelPath = modelURL + "model.json";
+      const metadataPath = modelURL + "metadata.json";
+      model = await tmImage.load(modelPath, metadataPath);
+      webcam = new tmImage.Webcam(300, 300, true);
+      await webcam.setup();
+      await webcam.play();
+      document.getElementById("webcam").appendChild(webcam.canvas);
+      window.requestAnimationFrame(loop);
+    }
+
+    async function loop() {
+      webcam.update();
+      const prediction = await model.predict(webcam.canvas);
+      document.getElementById("result").innerText = prediction[0].className;
+      window.requestAnimationFrame(loop);
+    }
+
+    init();
+  </script>
+</body>
+</html>
