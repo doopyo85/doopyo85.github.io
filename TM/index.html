@@ -2,7 +2,6 @@
 <html>
   <head>
     <title>TM 이미지 예측기</title>
-    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image"></script>
   </head>
   <body>
     <h2>AI 이미지 분류 결과:</h2>
@@ -10,6 +9,10 @@
     <button onclick="predict()">예측하기</button>
     <h3 id="result">결과 대기 중...</h3>
 
+    <!-- Teachable Machine 라이브러리 -->
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image"></script>
+
+    <!-- 우리의 코드 -->
     <script>
       const URL = "https://teachablemachine.withgoogle.com/models/qa3x4ZfAB/";
       let model, webcam;
@@ -20,9 +23,9 @@
           const metadataURL = URL + "metadata.json";
 
           model = await tmImage.load(modelURL, metadataURL);
-          webcam = new tmImage.Webcam(224, 224, true); // width, height, flip
-          await webcam.setup(); // 카메라 접근 허용 요청
-          await webcam.play();  // 카메라 실행
+          webcam = new tmImage.Webcam(224, 224, true);
+          await webcam.setup();
+          await webcam.play();
           document.getElementById("webcam-container").appendChild(webcam.canvas);
         } catch (e) {
           document.getElementById("result").innerText = "모델 또는 카메라 초기화 실패: " + e.message;
@@ -36,7 +39,7 @@
             return;
           }
 
-          webcam.update(); // 현재 프레임 캡처
+          webcam.update();
           const prediction = await model.predict(webcam.canvas);
           prediction.sort((a, b) => b.probability - a.probability);
           const top = prediction[0];
