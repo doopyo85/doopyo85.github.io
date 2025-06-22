@@ -2,60 +2,66 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>TM 이미지 예측기</title>
-  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
+  <title>Teachable Machine 이미지 분류기</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 </head>
 <body>
-  <h2>AI 이미지 분류 결과:</h2>
+  <h2>Teachable Machine 이미지 분류 결과</h2>
+  <button type="button" onclick="init()">Start</button>
   <div id="webcam-container"></div>
-  <button onclick="predict()">예측하기</button>
-  <h3 id="result">결과 대기 중...</h3>
+  <div id="label-container"></div>
 
   <script type="text/javascript">
-    const URL = "https://teachablemachine.withgoogle.com/models/qa3x4ZfAB/";
-    let model, webcam;
+    const URL = "https://teachablemachine.withgoogle.com/models/hG6md1bwO/";
+
+    let model, webcam, labelContainer, maxPredictions;
 
     async function init() {
-      try {
-        const modelURL = URL + "model.json";
-        const metadataURL = URL + "metadata.json";
+      const modelURL = URL + "model.json";
+      const metadataURL = URL + "metadata.json";
 
-        model = await tmImage.load(modelURL, metadataURL);
-        webcam = new tmImage.Webcam(224, 224, true); // width, height, flip
-        await webcam.setup(); // 카메라 접근 허용 요청
-        await webcam.play();  // 실시간 실행
-        document.getElementById("webcam-container").appendChild(webcam.canvas);
-      } catch (e) {
-        document.getElementById("result").innerText =
-          "모델 또는 카메라 초기화 실패: " + e.message;
+      // 모델 로드
+      model = await tmImage.load(modelURL, metadataURL);
+      maxPredictions = model.getTotalClasses();
+
+      // 웹캠 설정
+      const flip = true; // 좌우 반전
+      webcam = new tmImage.Webcam(200, 200, flip);
+      await webcam.setup(); // 카메라 접근 허용
+      await webcam.play();
+      window.requestAnimationFrame(loop);
+
+      // 화면에 웹캠 추가
+      document.getElementById("webcam-container").appendChild(webcam.canvas);
+      labelContainer = document.getElementById("label-container");
+      for (let i = 0; i < maxPredictions; i++) {
+        labelContainer.appendChild(document.createElement("div"));
       }
+    }
+
+    async function loop() {
+      webcam.update(); // 프레임 갱신
+      await predict();
+      window.requestAnimationFrame(loop);
     }
 
     async function predict() {
-      try {
-        if (!model || !webcam) {
-          document.getElementById("result").innerText =
-            "모델이 아직 준비되지 않았습니다.";
-          return;
-        }
+      const prediction = await model.predict(webcam.canvas);
 
-        webcam.update();
-        const prediction = await model.predict(webcam.canvas);
-        prediction.sort((a, b) => b.probability - a.probability);
-        const top = prediction[0];
-        document.getElementById("result").innerText =
-          `${top.className} (${(top.probability * 100).toFixed(2)}%)`;
+      // 가장 높은 확률 결과를 Thunkable로 전송
+      const top = prediction.reduce((a, b) => a.probability > b.probability ? a : b);
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(top.className);
+      }
 
-        if (window.ReactNativeWebView) {
-          window.ReactNativeWebView.postMessage(top.className);
-        }
-      } catch (e) {
-        document.getElementById("result").innerText =
-          "예측 실패: " + e.message;
+      // 결과를 화면에 표시
+      for (let i = 0; i < maxPredictions; i++) {
+        const classPrediction =
+          prediction[i].className + ": " + prediction[i].probability.toFixed(2);
+        labelContainer.childNodes[i].innerHTML = classPrediction;
       }
     }
-
-    init();
   </script>
 </body>
 </html>
