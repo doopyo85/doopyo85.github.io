@@ -2,51 +2,73 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>TM 이미지 예측기</title>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+  <title>이미지 예측기</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest"></script>
 </head>
 <body>
   <canvas id="preview" width="224" height="224" style="display:none;"></canvas>
 
   <script>
     const URL = "https://teachablemachine.withgoogle.com/models/hG6md1bwO/";
-    let model;
+    let model, webcam, labelContainer, maxPredictions;
 
+    // 모델 로드
     async function loadModel() {
       const modelURL = URL + "model.json";
       const metadataURL = URL + "metadata.json";
       model = await tmImage.load(modelURL, metadataURL);
     }
 
-    async function predictFromImage(imgUrl) {
+    // 예측 실행
+    async function predictFromBase64(base64) {
       const img = new Image();
-      img.crossOrigin = "anonymous";
       img.onload = async () => {
         const canvas = document.getElementById("preview");
         const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0, 224, 224);
 
         const prediction = await model.predict(canvas);
         prediction.sort((a, b) => b.probability - a.probability);
         const top = prediction[0];
 
-        // 결과를 Thunkable로 전송
-        window.parent.postMessage(top.className, "*");
+        // Thunkable로 결과 전송
+        if (window.ReactNativeWebView) {
+          window.ReactNativeWebView.postMessage(top.className);
+        } else if (window.postMessage) {
+          window.postMessage(top.className, "*");
+        }
       };
-      img.src = imgUrl;
+      img.src = base64;
     }
 
-    // Thunkable에서 사진 경로 메시지를 받으면 처리
+    // Thunkable에서 메시지 수신 (file:// 경로 → base64 변환)
     window.addEventListener("message", async (event) => {
-      const imgUrl = event.data;
+      const fileUrl = event.data;
+      if (!fileUrl.startsWith("file://") && !fileUrl.startsWith("data:image")) return;
 
       if (!model) {
         await loadModel();
       }
 
-      if (typeof imgUrl === "string" && imgUrl.startsWith("data:image") || imgUrl.startsWith("http")) {
-        predictFromImage(imgUrl);
+      // file:// 또는 data:image/... url을 fetch → base64로 변환
+      if (fileUrl.startsWith("data:image")) {
+        predictFromBase64(fileUrl); // 이미 base64이면 바로 예측
+      } else {
+        try {
+          const response = await fetch(fileUrl);
+          const blob = await response.blob();
+
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const base64data = reader.result;
+            predictFromBase64(base64data);
+          };
+          reader.readAsDataURL(blob);
+        } catch (err) {
+          window.postMessage("이미지 변환 실패", "*");
+        }
       }
     });
   </script>
