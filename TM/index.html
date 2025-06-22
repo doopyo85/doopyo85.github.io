@@ -7,7 +7,13 @@
   <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8.4/dist/teachablemachine-image.min.js"></script>
   <style>
     body { font-family: sans-serif; padding: 20px; }
-    #status { white-space: pre-line; background: #f3f3f3; padding: 10px; border-radius: 5px; }
+    #status {
+      white-space: pre-line;
+      background: #f3f3f3;
+      padding: 10px;
+      border-radius: 5px;
+      font-size: 1.2em;
+    }
   </style>
 </head>
 <body>
@@ -22,20 +28,16 @@
     function logStatus(msg) {
       statusDiv.innerText = msg;
       console.log(msg);
-      alert(msg);  // 디버깅용 alert
     }
 
     async function loadModel(modelURL) {
       const modelURLjson = modelURL + "model.json";
       const metadataURL = modelURL + "metadata.json";
-      logStatus("📦 모델 로딩 중...\n" + modelURLjson);
       model = await tmImage.load(modelURLjson, metadataURL);
       logStatus("✅ 모델 로드 완료\n" + modelURL);
     }
 
     async function predictFromBase64(base64) {
-      logStatus("🖼️ 이미지 로딩 시작");
-
       const img = new Image();
       img.onload = async () => {
         const canvas = document.getElementById("preview");
@@ -50,28 +52,21 @@
 
           logStatus("✅ 예측 완료: " + top.className);
           if (window.ReactNativeWebView) {
-            alert("📤 ReactNativeWebView.postMessage 실행");
             window.ReactNativeWebView.postMessage(top.className);
           } else if (window.postMessage) {
-            alert("📤 window.postMessage 실행");
             window.postMessage(top.className, "*");
-          } else {
-            alert("⚠️ 메시지 전송 인터페이스 없음");
           }
         } catch (err) {
           logStatus("❌ 예측 실패: " + err.message);
         }
       };
-      img.onerror = () => {
-        logStatus("❌ base64 이미지 로딩 실패");
-      };
       img.src = base64;
     }
 
-    // 🔧 메시지 수신 처리 (Thunkable에서 오는 메시지)
-    document.addEventListener("message", async (event) => {
+    // 메시지 수신 (WebViewer에서 오는 메시지)
+    window.addEventListener("message", async (event) => {
       const fullMessage = event.data;
-      logStatus("📩 받은 메시지:\n" + fullMessage);
+      logStatus("⏳ 예측 시작...");
 
       if (!fullMessage.includes("&")) {
         logStatus("❗ 메시지 형식 오류 (형식: 이미지URL&모델URL)");
@@ -79,27 +74,23 @@
       }
 
       let [imgURL, modelURL] = fullMessage.split("&");
-
       if (imgURL.startsWith("http://")) {
         imgURL = imgURL.replace("http://", "https://");
-        logStatus("🔁 이미지 URL을 HTTPS로 변환함:\n" + imgURL);
       }
 
       try {
         await loadModel(modelURL.endsWith("/") ? modelURL : modelURL + "/");
 
-        logStatus("🌐 이미지 요청 중...\n" + imgURL);
         const res = await fetch(imgURL);
         const blob = await res.blob();
 
         const reader = new FileReader();
         reader.onloadend = () => {
-          logStatus("📥 base64 변환 완료. 예측 시작");
           predictFromBase64(reader.result);
         };
         reader.readAsDataURL(blob);
       } catch (err) {
-        logStatus("❌ 이미지 처리 실패: " + err.message);
+        logStatus("❌ 이미지 예측 실패: " + err.message);
       }
     });
   </script>
