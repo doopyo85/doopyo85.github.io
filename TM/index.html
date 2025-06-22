@@ -2,18 +2,11 @@
 <html>
   <head>
     <title>TM 이미지 예측기</title>
-  </head>
-  <body>
-    <h2>AI 이미지 분류 결과:</h2>
-    <div id="webcam-container"></div>
-    <button onclick="predict()">예측하기</button>
-    <h3 id="result">결과 대기 중...</h3>
+    <!-- Teachable Machine 라이브러리 (defer 추가) -->
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image" defer></script>
 
-    <!-- Teachable Machine 라이브러리 -->
-    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image"></script>
-
-    <!-- 우리의 코드 -->
-    <script>
+    <!-- 예측기 로직도 defer로 실행 -->
+    <script defer>
       const URL = "https://teachablemachine.withgoogle.com/models/qa3x4ZfAB/";
       let model, webcam;
 
@@ -45,12 +38,11 @@
           const top = prediction[0];
           document.getElementById("result").innerText =
             `${top.className} (${(top.probability * 100).toFixed(2)}%)`;
-        } catch (e) {
-          document.getElementById("result").innerText = "예측 실패: " + e.message;
-        }
-      }
 
-      init();
-    </script>
-  </body>
-</html>
+          // Thunkable에 결과 전송
+          if (window.ReactNativeWebView) {
+            window.ReactNativeWebView.postMessage(top.className);
+          }
+
+        } catch (e) {
+          document.getElementById("result").innerText = "예측 실패: "
