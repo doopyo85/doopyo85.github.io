@@ -36,7 +36,9 @@
       await webcam.setup();
       await webcam.play();
       document.getElementById("webcam-container").appendChild(webcam.canvas);
-      webcam.canvas.style.display = "block"; // 촬영 화면 숨기기
+
+      // ✅ 카메라 화면 보이기
+      webcam.canvas.style.display = "block";
     }
 
     async function captureAndPredict() {
@@ -49,13 +51,11 @@
       prediction.sort((a, b) => b.probability - a.probability);
       const top = prediction[0];
 
-      // Thunkable WebViewer로 결과 전송
-      if (window.ReactNativeWebView) {
-        window.ReactNativeWebView.postMessage(top.className);
-      }
+      // ✅ Thunkable WebViewer로 메시지 전송
+      window.parent.postMessage(top.className, "*");
     }
 
-    // Thunkable에서 start 명령 받으면 웹캠 초기화
+    // ✅ Thunkable에서 메시지 수신
     window.addEventListener("message", (event) => {
       if (event.data === "start") init();
       if (event.data === "capture") captureAndPredict();
