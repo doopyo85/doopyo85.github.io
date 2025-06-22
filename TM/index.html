@@ -2,7 +2,7 @@
 <html>
   <head>
     <title>TM 이미지 예측기</title>
-    <!-- ✅ 올바른 버전의 TM 라이브러리 직접 명시 -->
+    <!-- Teachable Machine 라이브러리 (정확한 경로) -->
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8.4/dist/teachablemachine-image.min.js"></script>
   </head>
   <body>
@@ -20,8 +20,9 @@
           const modelURL = URL + "model.json";
           const metadataURL = URL + "metadata.json";
 
-          model = await tmImage.load(modelURL, metadataURL);
-          webcam = new tmImage.Webcam(224, 224, true);
+          // ✅ teachableMachine 객체 사용
+          model = await teachableMachine.image.load(modelURL, metadataURL);
+          webcam = new teachableMachine.image.Webcam(224, 224, true);
           await webcam.setup();
           await webcam.play();
           document.getElementById("webcam-container").appendChild(webcam.canvas);
@@ -43,7 +44,6 @@
           const prediction = await model.predict(webcam.canvas);
           prediction.sort((a, b) => b.probability - a.probability);
           const top = prediction[0];
-
           document.getElementById("result").innerText =
             `${top.className} (${(top.probability * 100).toFixed(2)}%)`;
 
