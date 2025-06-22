@@ -2,63 +2,52 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>TM 웹캠 감지기</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      text-align: center;
-      background-color: #f9f9f9;
-    }
-    #webcam-container, #snapshot, #label-container {
-      margin-top: 1em;
-    }
-    canvas {
-      display: none;
-    }
-  </style>
+  <title>TM 이미지 예측기</title>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 </head>
 <body>
-  <div id="webcam-container"></div>
-  <canvas id="snapshot" width="224" height="224"></canvas>
+  <canvas id="preview" width="224" height="224" style="display:none;"></canvas>
 
   <script>
     const URL = "https://teachablemachine.withgoogle.com/models/hG6md1bwO/";
-    let model, webcam;
+    let model;
 
-    async function init() {
+    async function loadModel() {
       const modelURL = URL + "model.json";
       const metadataURL = URL + "metadata.json";
-
       model = await tmImage.load(modelURL, metadataURL);
-      webcam = new tmImage.Webcam(224, 224, true);
-      await webcam.setup();
-      await webcam.play();
-      document.getElementById("webcam-container").appendChild(webcam.canvas);
-
-      // ✅ 카메라 화면 보이기
-      webcam.canvas.style.display = "block";
     }
 
-    async function captureAndPredict() {
-      webcam.update();
-      const canvas = document.getElementById("snapshot");
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(webcam.canvas, 0, 0);
+    async function predictFromImage(imgUrl) {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = async () => {
+        const canvas = document.getElementById("preview");
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, 224, 224);
 
-      const prediction = await model.predict(webcam.canvas);
-      prediction.sort((a, b) => b.probability - a.probability);
-      const top = prediction[0];
+        const prediction = await model.predict(canvas);
+        prediction.sort((a, b) => b.probability - a.probability);
+        const top = prediction[0];
 
-      // ✅ Thunkable WebViewer로 메시지 전송
-      window.parent.postMessage(top.className, "*");
+        // 결과를 Thunkable로 전송
+        window.parent.postMessage(top.className, "*");
+      };
+      img.src = imgUrl;
     }
 
-    // ✅ Thunkable에서 메시지 수신
-    window.addEventListener("message", (event) => {
-      if (event.data === "start") init();
-      if (event.data === "capture") captureAndPredict();
+    // Thunkable에서 사진 경로 메시지를 받으면 처리
+    window.addEventListener("message", async (event) => {
+      const imgUrl = event.data;
+
+      if (!model) {
+        await loadModel();
+      }
+
+      if (typeof imgUrl === "string" && imgUrl.startsWith("data:image") || imgUrl.startsWith("http")) {
+        predictFromImage(imgUrl);
+      }
     });
   </script>
 </body>
