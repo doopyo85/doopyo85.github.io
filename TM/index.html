@@ -1,12 +1,11 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>TM 이미지 분류기</title>
+    <title>TM 이미지 예측기</title>
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image"></script>
   </head>
   <body>
-    <h2>이미지 인식 결과:</h2>
-    <video id="webcam" autoplay playsinline width="224" height="224" style="display:none;"></video>
+    <h2>AI 이미지 분류 결과:</h2>
     <div id="webcam-container"></div>
     <button onclick="predict()">예측하기</button>
     <h3 id="result">결과 대기 중...</h3>
@@ -16,28 +15,36 @@
       let model, webcam;
 
       async function init() {
-        const modelURL = URL + "model.json";
-        const metadataURL = URL + "metadata.json";
-        model = await tmImage.load(modelURL, metadataURL);
+        try {
+          const modelURL = URL + "model.json";
+          const metadataURL = URL + "metadata.json";
 
-        webcam = new tmImage.Webcam(224, 224, true);
-        await webcam.setup();
-        await webcam.play();
-        document.getElementById("webcam-container").appendChild(webcam.canvas);
+          model = await tmImage.load(modelURL, metadataURL);
+          webcam = new tmImage.Webcam(224, 224, true); // width, height, flip
+          await webcam.setup(); // 카메라 접근 허용 요청
+          await webcam.play();  // 카메라 실행
+          document.getElementById("webcam-container").appendChild(webcam.canvas);
+        } catch (e) {
+          document.getElementById("result").innerText = "모델 또는 카메라 초기화 실패: " + e.message;
+        }
       }
 
       async function predict() {
-        if (!webcam || !model) {
-          document.getElementById("result").innerText = "모델이 아직 준비되지 않았습니다.";
-          return;
-        }
+        try {
+          if (!model || !webcam) {
+            document.getElementById("result").innerText = "모델이 아직 준비되지 않았습니다.";
+            return;
+          }
 
-        webcam.update(); // 현재 프레임 업데이트
-        const prediction = await model.predict(webcam.canvas);
-        prediction.sort((a, b) => b.probability - a.probability);
-        const top = prediction[0];
-        document.getElementById("result").innerText =
-          `${top.className} (${(top.probability * 100).toFixed(2)}%)`;
+          webcam.update(); // 현재 프레임 캡처
+          const prediction = await model.predict(webcam.canvas);
+          prediction.sort((a, b) => b.probability - a.probability);
+          const top = prediction[0];
+          document.getElementById("result").innerText =
+            `${top.className} (${(top.probability * 100).toFixed(2)}%)`;
+        } catch (e) {
+          document.getElementById("result").innerText = "예측 실패: " + e.message;
+        }
       }
 
       init();
