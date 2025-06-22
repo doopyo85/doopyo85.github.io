@@ -2,76 +2,44 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>포켓몬 닮은꼴 찾기</title>
+  <title>TM 웹캠 감지기</title>
   <style>
     body {
       font-family: sans-serif;
       text-align: center;
       background-color: #f9f9f9;
     }
-    #main-screen, #result-screen, #webcam-screen {
+    #webcam-container, #snapshot, #label-container {
+      margin-top: 1em;
+    }
+    canvas {
       display: none;
-      padding: 2em;
-    }
-    #main-screen {
-      display: block;
-    }
-    #webcam-container {
-      margin: 1em auto;
-    }
-    #photo-result {
-      border: 5px solid #eee;
-      padding: 1em;
-      background: white;
-      display: inline-block;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    }
-    button {
-      padding: 1em 2em;
-      font-size: 1.2em;
-      margin: 1em;
-      cursor: pointer;
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 </head>
 <body>
-  <div id="main-screen">
-    <h1>포켓몬 닮은꼴 찾기</h1>
-    <button onclick="startApp()">Start</button>
-  </div>
-
-  <div id="webcam-screen">
-    <div id="webcam-container"></div>
-    <button onclick="takeSnapshot()">찰칵</button>
-  </div>
-
-  <div id="result-screen">
-    <div id="photo-result">
-      <canvas id="snapshot" width="224" height="224"></canvas>
-      <h2 id="result-label">예측 결과:</h2>
-    </div>
-    <button onclick="goBack()">다시 시작</button>
-  </div>
+  <div id="webcam-container"></div>
+  <canvas id="snapshot" width="224" height="224"></canvas>
 
   <script>
     const URL = "https://teachablemachine.withgoogle.com/models/hG6md1bwO/";
     let model, webcam;
 
-    async function startApp() {
-      document.getElementById("main-screen").style.display = "none";
-      document.getElementById("webcam-screen").style.display = "block";
+    async function init() {
       const modelURL = URL + "model.json";
       const metadataURL = URL + "metadata.json";
+
       model = await tmImage.load(modelURL, metadataURL);
       webcam = new tmImage.Webcam(224, 224, true);
       await webcam.setup();
       await webcam.play();
       document.getElementById("webcam-container").appendChild(webcam.canvas);
+      webcam.canvas.style.display = "none"; // 촬영 화면 숨기기
     }
 
-    async function takeSnapshot() {
+    async function captureAndPredict() {
       webcam.update();
       const canvas = document.getElementById("snapshot");
       const ctx = canvas.getContext("2d");
@@ -79,22 +47,19 @@
 
       const prediction = await model.predict(webcam.canvas);
       prediction.sort((a, b) => b.probability - a.probability);
-      const best = prediction[0];
-      document.getElementById("result-label").innerText = `당신은 ${best.className}! (${(best.probability * 100).toFixed(1)}%)`;
+      const top = prediction[0];
 
+      // Thunkable WebViewer로 결과 전송
       if (window.ReactNativeWebView) {
-        window.ReactNativeWebView.postMessage(best.className);
+        window.ReactNativeWebView.postMessage(top.className);
       }
-
-      document.getElementById("webcam-screen").style.display = "none";
-      document.getElementById("result-screen").style.display = "block";
     }
 
-    function goBack() {
-      document.getElementById("result-screen").style.display = "none";
-      document.getElementById("main-screen").style.display = "block";
-      location.reload(); // 새로고침으로 카메라 종료
-    }
+    // Thunkable에서 start 명령 받으면 웹캠 초기화
+    window.addEventListener("message", (event) => {
+      if (event.data === "start") init();
+      if (event.data === "capture") captureAndPredict();
+    });
   </script>
 </body>
 </html>
