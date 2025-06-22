@@ -36,7 +36,7 @@
       await webcam.setup();
       await webcam.play();
       document.getElementById("webcam-container").appendChild(webcam.canvas);
-      webcam.canvas.style.display = "none"; // 촬영 화면 숨기기
+      webcam.canvas.style.display = "block"; // 촬영 화면 숨기기
     }
 
     async function captureAndPredict() {
