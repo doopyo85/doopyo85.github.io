@@ -1,33 +1,38 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <title>AI 예측기</title>
+  <meta charset="UTF-8" />
+  <title>AI 이미지 예측</title>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    #status { white-space: pre-line; background: #f3f3f3; padding: 10px; border-radius: 5px; }
+  </style>
 </head>
 <body>
   <h2>AI 이미지 예측</h2>
-  <p id="status">대기 중...</p>
-  <p><b>모델:</b> <span id="modelURL">없음</span></p>
-  <p><b>이미지:</b> <span id="imageURL">없음</span></p>
-  <p><b>예측결과:</b> <span id="result">-</span></p>
+  <div id="status">대기 중...</div>
   <canvas id="preview" width="224" height="224" style="display:none;"></canvas>
 
   <script>
-    let model = null;
-    let modelBaseURL = null;
-    const statusEl = document.getElementById("status");
-    const modelURLEl = document.getElementById("modelURL");
-    const imageURLEl = document.getElementById("imageURL");
-    const resultEl = document.getElementById("result");
+    let model, maxPredictions;
+    const statusDiv = document.getElementById("status");
 
-    async function loadModel(baseURL) {
-      statusEl.innerText = "모델 불러오는 중...";
-      const modelURL = baseURL + "model.json";
-      const metadataURL = baseURL + "metadata.json";
-      model = await tmImage.load(modelURL, metadataURL);
-      statusEl.innerText = "모델 로드 완료!";
+    function logStatus(msg) {
+      statusDiv.innerText = msg;
+      console.log(msg);
+    }
+
+    async function loadModel(modelURL) {
+      try {
+        const modelURLjson = modelURL + "model.json";
+        const metadataURL = modelURL + "metadata.json";
+        model = await tmImage.load(modelURLjson, metadataURL);
+        logStatus("✅ 모델 로드 완료\n" + modelURL);
+      } catch (e) {
+        logStatus("❌ 모델 로드 실패\n" + e.message);
+      }
     }
 
     async function predictFromBase64(base64) {
@@ -38,53 +43,52 @@
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0, 224, 224);
 
-        const prediction = await model.predict(canvas);
-        prediction.sort((a, b) => b.probability - a.probability);
-        const top = prediction[0];
+        try {
+          const prediction = await model.predict(canvas);
+          prediction.sort((a, b) => b.probability - a.probability);
+          const top = prediction[0];
+          logStatus("✅ 예측 완료: " + top.className);
 
-        resultEl.innerText = top.className;
-        if (window.ReactNativeWebView) {
-          window.ReactNativeWebView.postMessage(top.className);
-        } else if (window.postMessage) {
-          window.postMessage(top.className, "*");
+          if (window.ReactNativeWebView) {
+            window.ReactNativeWebView.postMessage(top.className);
+          } else if (window.postMessage) {
+            window.postMessage(top.className, "*");
+          }
+        } catch (e) {
+          logStatus("❌ 예측 실패\n" + e.message);
         }
       };
       img.src = base64;
     }
 
+    // 메시지 수신 처리
     window.addEventListener("message", async (event) => {
-      let data = event.data;
-      if (typeof data !== "string") return;
+      const fullMessage = event.data;
+      console.log("📩 받은 메시지:", fullMessage);
 
-      const parts = data.split("|");
-      if (parts.length < 2) {
-        statusEl.innerText = "전달받은 데이터 형식이 잘못되었습니다.";
+      if (!fullMessage.includes("&")) {
+        logStatus("❗ 메시지 형식 오류 (& 없음):\n" + fullMessage);
         return;
       }
 
-      let imageURL = parts[0].replace("http://", "https://");
-      let newModelURL = parts[1];
+      const [imgURL, modelURL] = fullMessage.split("&");
 
-      imageURLEl.innerText = imageURL;
-      modelURLEl.innerText = newModelURL;
-
-      if (!model || modelBaseURL !== newModelURL) {
-        modelBaseURL = newModelURL;
-        await loadModel(modelBaseURL);
+      if (!imgURL.startsWith("http")) {
+        logStatus("❗ 유효하지 않은 이미지 URL:\n" + imgURL);
+        return;
       }
 
-      statusEl.innerText = "이미지 예측 중...";
+      logStatus(`🖼️ 이미지: ${imgURL}\n📦 모델: ${modelURL}`);
+
       try {
-        const response = await fetch(imageURL);
+        await loadModel(modelURL.endsWith("/") ? modelURL : modelURL + "/");
+        const response = await fetch(imgURL);
         const blob = await response.blob();
         const reader = new FileReader();
-        reader.onloadend = () => {
-          const base64data = reader.result;
-          predictFromBase64(base64data);
-        };
+        reader.onloadend = () => predictFromBase64(reader.result);
         reader.readAsDataURL(blob);
-      } catch (err) {
-        statusEl.innerText = "이미지 처리 실패: " + err.message;
+      } catch (e) {
+        logStatus("❌ 이미지 처리 실패\n" + e.message);
       }
     });
   </script>
