@@ -11,16 +11,14 @@
 
   <script>
     const URL = "https://teachablemachine.withgoogle.com/models/hG6md1bwO/";
-    let model, webcam, labelContainer, maxPredictions;
+    let model, maxPredictions;
 
-    // 모델 로드
     async function loadModel() {
       const modelURL = URL + "model.json";
       const metadataURL = URL + "metadata.json";
       model = await tmImage.load(modelURL, metadataURL);
     }
 
-    // 예측 실행
     async function predictFromBase64(base64) {
       const img = new Image();
       img.onload = async () => {
@@ -33,7 +31,7 @@
         prediction.sort((a, b) => b.probability - a.probability);
         const top = prediction[0];
 
-        // Thunkable로 결과 전송
+        // 결과를 Thunkable로 전송
         if (window.ReactNativeWebView) {
           window.ReactNativeWebView.postMessage(top.className);
         } else if (window.postMessage) {
@@ -43,31 +41,37 @@
       img.src = base64;
     }
 
-    // Thunkable에서 메시지 수신 (file:// 경로 → base64 변환)
+    // Thunkable에서 메시지 수신
     window.addEventListener("message", async (event) => {
-      const fileUrl = event.data;
-      if (!fileUrl.startsWith("file://") && !fileUrl.startsWith("data:image")) return;
+      let fileUrl = event.data;
+
+      if (!fileUrl.startsWith("http") && !fileUrl.startsWith("data:image")) return;
 
       if (!model) {
         await loadModel();
       }
 
-      // file:// 또는 data:image/... url을 fetch → base64로 변환
-      if (fileUrl.startsWith("data:image")) {
-        predictFromBase64(fileUrl); // 이미 base64이면 바로 예측
-      } else {
-        try {
-          const response = await fetch(fileUrl);
-          const blob = await response.blob();
+      // http → https 보정
+      if (fileUrl.startsWith("http://")) {
+        fileUrl = fileUrl.replace("http://", "https://");
+      }
 
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            const base64data = reader.result;
-            predictFromBase64(base64data);
-          };
-          reader.readAsDataURL(blob);
-        } catch (err) {
-          window.postMessage("이미지 변환 실패", "*");
+      try {
+        const response = await fetch(fileUrl);
+        const blob = await response.blob();
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64data = reader.result;
+          predictFromBase64(base64data);
+        };
+        reader.readAsDataURL(blob);
+      } catch (err) {
+        const errorMessage = "이미지 변환 실패: " + err.message;
+        if (window.ReactNativeWebView) {
+          window.ReactNativeWebView.postMessage(errorMessage);
+        } else if (window.postMessage) {
+          window.postMessage(errorMessage, "*");
         }
       }
     });
