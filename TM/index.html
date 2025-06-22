@@ -1,37 +1,46 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <title>AI 예측 결과</title>
-  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image"></script>
-</head>
-<body>
-  <h2>이미지 인식 결과</h2>
-  <video id="webcam" autoplay playsinline width="300" height="300"></video>
-  <p id="result">예측 중...</p>
+  <head>
+    <title>TM 이미지 분류기</title>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image"></script>
+  </head>
+  <body>
+    <h2>이미지 인식 결과:</h2>
+    <video id="webcam" autoplay playsinline width="224" height="224" style="display:none;"></video>
+    <div id="webcam-container"></div>
+    <button onclick="predict()">예측하기</button>
+    <h3 id="result">결과 대기 중...</h3>
 
-  <script>
-    const modelURL = "https://teachablemachine.withgoogle.com/models/qa3x4ZfAB/";
-    let model, webcam;
+    <script>
+      const URL = "https://teachablemachine.withgoogle.com/models/qa3x4ZfAB/";
+      let model, webcam;
 
-    async function init() {
-      const modelPath = modelURL + "model.json";
-      const metadataPath = modelURL + "metadata.json";
-      model = await tmImage.load(modelPath, metadataPath);
-      webcam = new tmImage.Webcam(300, 300, true);
-      await webcam.setup();
-      await webcam.play();
-      document.getElementById("webcam").appendChild(webcam.canvas);
-      window.requestAnimationFrame(loop);
-    }
+      async function init() {
+        const modelURL = URL + "model.json";
+        const metadataURL = URL + "metadata.json";
+        model = await tmImage.load(modelURL, metadataURL);
 
-    async function loop() {
-      webcam.update();
-      const prediction = await model.predict(webcam.canvas);
-      document.getElementById("result").innerText = prediction[0].className;
-      window.requestAnimationFrame(loop);
-    }
+        webcam = new tmImage.Webcam(224, 224, true);
+        await webcam.setup();
+        await webcam.play();
+        document.getElementById("webcam-container").appendChild(webcam.canvas);
+      }
 
-    init();
-  </script>
-</body>
+      async function predict() {
+        if (!webcam || !model) {
+          document.getElementById("result").innerText = "모델이 아직 준비되지 않았습니다.";
+          return;
+        }
+
+        webcam.update(); // 현재 프레임 업데이트
+        const prediction = await model.predict(webcam.canvas);
+        prediction.sort((a, b) => b.probability - a.probability);
+        const top = prediction[0];
+        document.getElementById("result").innerText =
+          `${top.className} (${(top.probability * 100).toFixed(2)}%)`;
+      }
+
+      init();
+    </script>
+  </body>
 </html>
