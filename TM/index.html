@@ -45,4 +45,17 @@
           }
 
         } catch (e) {
-          document.getElementById("result").innerText = "예측 실패: "
+          document.getElementById("result").innerText = "예측 실패: " + e.message;
+        }
+      }
+
+      window.onload = init;
+    </script>
+  </head>
+  <body>
+    <h2>AI 이미지 분류 결과:</h2>
+    <div id="webcam-container"></div>
+    <button onclick="predict()">예측하기</button>
+    <h3 id="result">결과 대기 중...</h3>
+  </body>
+</html>
