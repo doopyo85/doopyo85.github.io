@@ -2,7 +2,8 @@
 <html>
   <head>
     <title>TM 이미지 예측기</title>
-    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image"></script>
+    <!-- ✅ 올바른 버전의 TM 라이브러리 직접 명시 -->
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8.4/dist/teachablemachine-image.min.js"></script>
   </head>
   <body>
     <h2>AI 이미지 분류 결과:</h2>
@@ -14,11 +15,11 @@
       let model, webcam;
       const URL = "https://teachablemachine.withgoogle.com/models/qa3x4ZfAB/";
 
-      // 모든 DOM이 로딩된 후 실행
       window.addEventListener("DOMContentLoaded", async () => {
         try {
           const modelURL = URL + "model.json";
           const metadataURL = URL + "metadata.json";
+
           model = await tmImage.load(modelURL, metadataURL);
           webcam = new tmImage.Webcam(224, 224, true);
           await webcam.setup();
@@ -37,10 +38,12 @@
               "모델이 아직 준비되지 않았습니다.";
             return;
           }
+
           webcam.update();
           const prediction = await model.predict(webcam.canvas);
           prediction.sort((a, b) => b.probability - a.probability);
           const top = prediction[0];
+
           document.getElementById("result").innerText =
             `${top.className} (${(top.probability * 100).toFixed(2)}%)`;
 
