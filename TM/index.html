@@ -2,20 +2,23 @@
 <html>
   <head>
     <title>TM 이미지 예측기</title>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image"></script>
+  </head>
+  <body>
+    <h2>AI 이미지 분류 결과:</h2>
+    <div id="webcam-container"></div>
+    <button onclick="predict()">예측하기</button>
+    <h3 id="result">결과 대기 중...</h3>
 
-    <!-- Teachable Machine 라이브러리 로드 (defer로 늦게 실행) -->
-    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image" defer></script>
-
-    <!-- 우리가 작성한 코드도 defer로 실행 -->
-    <script defer>
-      const URL = "https://teachablemachine.withgoogle.com/models/qa3x4ZfAB/";
+    <script>
       let model, webcam;
+      const URL = "https://teachablemachine.withgoogle.com/models/qa3x4ZfAB/";
 
-      async function init() {
+      // 모든 DOM이 로딩된 후 실행
+      window.addEventListener("DOMContentLoaded", async () => {
         try {
           const modelURL = URL + "model.json";
           const metadataURL = URL + "metadata.json";
-
           model = await tmImage.load(modelURL, metadataURL);
           webcam = new tmImage.Webcam(224, 224, true);
           await webcam.setup();
@@ -25,7 +28,7 @@
           document.getElementById("result").innerText =
             "모델 또는 카메라 초기화 실패: " + e.message;
         }
-      }
+      });
 
       async function predict() {
         try {
@@ -34,7 +37,6 @@
               "모델이 아직 준비되지 않았습니다.";
             return;
           }
-
           webcam.update();
           const prediction = await model.predict(webcam.canvas);
           prediction.sort((a, b) => b.probability - a.probability);
@@ -42,7 +44,6 @@
           document.getElementById("result").innerText =
             `${top.className} (${(top.probability * 100).toFixed(2)}%)`;
 
-          // Thunkable 앱으로 메시지 전송
           if (window.ReactNativeWebView) {
             window.ReactNativeWebView.postMessage(top.className);
           }
@@ -51,15 +52,6 @@
             "예측 실패: " + e.message;
         }
       }
-
-      // defer 실행 후 페이지가 모두 로딩되면 init 실행
-      window.onload = init;
     </script>
-  </head>
-  <body>
-    <h2>AI 이미지 분류 결과:</h2>
-    <div id="webcam-container"></div>
-    <button onclick="predict()">예측하기</button>
-    <h3 id="result">결과 대기 중...</h3>
   </body>
 </html>
